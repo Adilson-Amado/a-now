@@ -301,8 +301,6 @@ export function useSync() {
         error: null,
       }));
 
-      toast.success('Dados sincronizados com sucesso!');
-      
     } catch (error) {
       console.error('Sync error:', error);
       setStatus(prev => ({
