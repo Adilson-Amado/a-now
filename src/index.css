@@ -1,0 +1,305 @@
+@import url('https://fonts.cdnfonts.com/css/lufga');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Core palette - Clean white with warm orange */
+    --background: 0 0% 99%;
+    --foreground: 0 0% 8%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 8%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 8%;
+
+    /* Orange as primary - energetic, focused */
+    --primary: 24 95% 53%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Soft warm gray for secondary */
+    --secondary: 30 10% 96%;
+    --secondary-foreground: 0 0% 20%;
+
+    /* Muted warm tones */
+    --muted: 30 8% 95%;
+    --muted-foreground: 0 0% 45%;
+
+    /* Accent - lighter orange */
+    --accent: 24 100% 95%;
+    --accent-foreground: 24 95% 40%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 30 10% 92%;
+    --input: 30 10% 92%;
+    --ring: 24 95% 53%;
+
+    --radius: 0.75rem;
+
+    /* Task priority colors */
+    --urgent: 0 84% 60%;
+    --urgent-foreground: 0 0% 100%;
+    --important: 24 95% 53%;
+    --important-foreground: 0 0% 100%;
+    --can-wait: 45 93% 47%;
+    --can-wait-foreground: 0 0% 10%;
+    --dispensable: 0 0% 70%;
+    --dispensable-foreground: 0 0% 100%;
+
+    /* Productivity states */
+    --productive: 142 71% 45%;
+    --partial: 45 93% 47%;
+    --unproductive: 0 84% 60%;
+
+    /* Sidebar - clean and subtle */
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 0 0% 30%;
+    --sidebar-primary: 24 95% 53%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 24 100% 97%;
+    --sidebar-accent-foreground: 24 95% 40%;
+    --sidebar-border: 30 10% 92%;
+    --sidebar-ring: 24 95% 53%;
+  }
+
+  .dark {
+    --background: 0 0% 6%;
+    --foreground: 0 0% 95%;
+
+    --card: 0 0% 8%;
+    --card-foreground: 0 0% 95%;
+
+    --popover: 0 0% 8%;
+    --popover-foreground: 0 0% 95%;
+
+    --primary: 24 95% 53%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 0 0% 12%;
+    --secondary-foreground: 0 0% 90%;
+
+    --muted: 0 0% 15%;
+    --muted-foreground: 0 0% 60%;
+
+    --accent: 24 50% 15%;
+    --accent-foreground: 24 95% 70%;
+
+    --destructive: 0 62% 50%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 0 0% 15%;
+    --input: 0 0% 15%;
+    --ring: 24 95% 53%;
+
+    --sidebar-background: 0 0% 5%;
+    --sidebar-foreground: 0 0% 80%;
+    --sidebar-primary: 24 95% 53%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 24 50% 12%;
+    --sidebar-accent-foreground: 24 95% 70%;
+    --sidebar-border: 0 0% 12%;
+    --sidebar-ring: 24 95% 53%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Lufga', system-ui, -apple-system, sans-serif;
+  }
+}
+
+@layer components {
+  /* Task priority badges */
+  .priority-urgent {
+    @apply bg-[hsl(var(--urgent))] text-[hsl(var(--urgent-foreground))];
+  }
+
+  .priority-important {
+    @apply bg-[hsl(var(--important))] text-[hsl(var(--important-foreground))];
+  }
+
+  .priority-can-wait {
+    @apply bg-[hsl(var(--can-wait))] text-[hsl(var(--can-wait-foreground))];
+  }
+
+  .priority-dispensable {
+    @apply bg-[hsl(var(--dispensable))] text-[hsl(var(--dispensable-foreground))];
+  }
+
+  /* Productivity state indicators */
+  .state-productive {
+    @apply bg-[hsl(var(--productive))];
+  }
+
+  .state-partial {
+    @apply bg-[hsl(var(--partial))];
+  }
+
+  .state-unproductive {
+    @apply bg-[hsl(var(--unproductive))];
+  }
+
+  /* Subtle glass effect */
+  .glass {
+    @apply bg-card/80 backdrop-blur-sm;
+  }
+
+  /* Focus ring */
+  .focus-ring {
+    @apply focus:outline-none focus:ring-2 focus:ring-primary/20 focus:ring-offset-2 focus:ring-offset-background;
+  }
+}
+
+@layer utilities {
+  /* Smooth transitions */
+  .transition-smooth {
+    @apply transition-all duration-300 ease-out;
+  }
+
+  /* Text gradient for headings */
+  .text-gradient {
+    @apply bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent;
+  }
+
+  /* Subtle hover lift */
+  .hover-lift {
+    @apply transition-transform duration-200 hover:-translate-y-0.5;
+  }
+
+  /* No scrollbar */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  /* Prevent body scroll when modal is open on mobile */
+  body[data-modal-open="true"] {
+    @apply fixed inset-0 overflow-hidden;
+    /* Store scroll position */
+    position: fixed;
+    width: 100%;
+    height: 100%;
+  }
+
+  /* Ensure modal content can scroll on mobile */
+  body[data-modal-open="true"] [data-radix-dialog-content] {
+    @apply max-h-[90vh] overflow-y-auto;
+  }
+
+  /* Fix for iOS Safari modal scrolling */
+  @supports (-webkit-touch-callout: none) {
+    body[data-modal-open="true"] {
+      position: fixed;
+      -webkit-overflow-scrolling: touch;
+    }
+  }
+
+  /* Mobile bottom navigation improvements */
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+
+  /* Ensure mobile nav is always visible */
+  @media (max-width: 1023px) {
+    nav.lg\\:hidden {
+      display: flex !important;
+      visibility: visible !important;
+      opacity: 1 !important;
+    }
+  }
+
+  /* Fix for mobile viewport height */
+  @media (max-height: 768px) {
+    .min-h-screen {
+      min-height: 100vh;
+      min-height: -webkit-fill-available;
+    }
+  }
+
+  /* Mobile menu scroll effects */
+  .scrollbar-hide {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  .scrollbar-hide::-moz-scrollbar {
+    display: none;
+  }
+
+  /* Smooth scroll for mobile menu */
+  .overflow-x-auto {
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+  }
+
+  /* Mobile menu scroll indicators */
+  .overflow-x-auto::-webkit-scrollbar {
+    height: 3px;
+    background: transparent;
+  }
+
+  .overflow-x-auto::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .overflow-x-auto::-webkit-scrollbar-thumb {
+    background: hsl(var(--sidebar-border) / 0.3);
+    border-radius: 3px;
+  }
+
+  .overflow-x-auto::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--sidebar-border) / 0.5);
+  }
+
+  /* Scroll indicator for mobile menu */
+  .mobile-scroll-indicator {
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+  }
+
+  .overflow-x-auto:hover .mobile-scroll-indicator {
+    opacity: 1;
+  }
+
+  /* Ensure mobile nav scroll works */
+  @media (max-width: 1023px) {
+    nav.lg\\:hidden .overflow-x-auto {
+      overflow-x: scroll !important;
+      overflow-y: hidden !important;
+      -webkit-overflow-scrolling: touch !important;
+    }
+  }
+
+  /* Ensure mobile nav is always visible */
+  @media (max-width: 1023px) {
+    nav.lg\\:hidden {
+      display: flex !important;
+      visibility: visible !important;
+      opacity: 1 !important;
+    }
+  }
+}

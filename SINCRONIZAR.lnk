@@ -1,0 +1,7 @@
+; Este é um arquivo de atalho do Windows
+; Para criar o atalho manualmente:
+; 1. Clique com o botão direito no desktop
+; 2. Novo > Atalho
+; 3. Cole: cmd /c "cd /d C:\Users\DAG Lda\Downloads\focus-flow-ai-main\focus-flow-ai-main && sync.bat"
+; 4. Nome: Sincronizar FocusFlow
+; 5. Concluir

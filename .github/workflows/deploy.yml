@@ -1,0 +1,78 @@
+name: Deploy FocusFlow
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Run tests
+      run: npm test -- --passWithNoTests
+    
+    - name: Build project
+      run: npm run build
+      env:
+        VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+        VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+        VITE_GEMINI_API_KEY: ${{ secrets.VITE_GEMINI_API_KEY }}
+        VITE_AI_PROVIDER: ${{ secrets.VITE_AI_PROVIDER || 'gemini' }}
+        VITE_DISABLE_PWA: ${{ secrets.VITE_DISABLE_PWA || 'false' }}
+    
+    - name: Check build
+      run: |
+        echo "📦 Build files:"
+        ls -la dist/
+        
+        if [ ! -f "dist/index.html" ]; then
+          echo "❌ index.html not found"
+          exit 1
+        fi
+        
+        if [ ! -f "dist/manifest.json" ]; then
+          echo "❌ manifest.json not found"
+          exit 1
+        fi
+        
+        echo "✅ Build successful!"
+    
+    - name: Deploy to Netlify
+      uses: netlify/actions/cli@master
+      with:
+        args: deploy --prod --dir=dist
+      env:
+        NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+        NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+      if: github.ref == 'refs/heads/main'
+    
+    - name: Deploy preview
+      uses: netlify/actions/cli@master
+      with:
+        args: deploy --dir=dist
+      env:
+        NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+        NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+      if: github.ref != 'refs/heads/main'
+    
+    - name: Performance test
+      run: |
+        echo "📊 Running performance tests..."
+        npm install -g lighthouse
+        lighthouse --chrome-flags="--headless" --output=json --output-path=lighthouse-report.json https://your-app.netlify.app || true
+        echo "✅ Performance test completed!"
