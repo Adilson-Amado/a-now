@@ -3,6 +3,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useTaskStore } from '@/stores/taskStore';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSync } from '@/hooks/useSync';
+import { useTaskBootstrap } from '@/hooks/useTaskBootstrap';
+import { useNotesBootstrap } from '@/hooks/useNotesBootstrap';
+import { useGoalsBootstrap } from '@/hooks/useGoalsBootstrap';
 import { DayHeader, ProductivityIndicator, ProductivityStats } from '@/components/dashboard/ProductivityStats';
 import { ProductivityChart } from '@/components/dashboard/ProductivityChart';
 import { DailyTimeline } from '@/components/dashboard/DailyTimeline';
@@ -37,6 +40,9 @@ type View = 'dashboard' | 'tasks' | 'notes' | 'goals' | 'reports' | 'focus' | 's
 export default function Dashboard() {
   const { tasks, getPendingTasks, getCompletedToday } = useTaskStore();
   const { logout } = useAuth();
+  useTaskBootstrap();
+  useNotesBootstrap();
+  useGoalsBootstrap();
   useSync();
 
   const [view, setView] = useState<View>('dashboard');

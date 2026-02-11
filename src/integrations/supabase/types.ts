@@ -14,7 +14,205 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      sync_tasks: {
+        Row: {
+          id: string;
+          local_id: string;
+          user_id: string;
+          title: string;
+          description: string | null;
+          priority: 'urgent' | 'important' | 'can-wait' | 'dispensable';
+          status: 'pending' | 'in-progress' | 'completed' | 'cancelled';
+          due_date: string | null;
+          created_at: string;
+          updated_at: string;
+          completed_at: string | null;
+          estimated_minutes: number | null;
+          actual_minutes: number | null;
+          tags: string[] | null;
+          ai_recommendation: string | null;
+          ai_reason: string | null;
+        };
+        Insert: {
+          id?: string;
+          local_id: string;
+          user_id: string;
+          title: string;
+          description?: string | null;
+          priority: 'urgent' | 'important' | 'can-wait' | 'dispensable';
+          status: 'pending' | 'in-progress' | 'completed' | 'cancelled';
+          due_date?: string | null;
+          created_at?: string;
+          updated_at?: string;
+          completed_at?: string | null;
+          estimated_minutes?: number | null;
+          actual_minutes?: number | null;
+          tags?: string[] | null;
+          ai_recommendation?: string | null;
+          ai_reason?: string | null;
+        };
+        Update: {
+          id?: string;
+          local_id?: string;
+          user_id?: string;
+          title?: string;
+          description?: string | null;
+          priority?: 'urgent' | 'important' | 'can-wait' | 'dispensable';
+          status?: 'pending' | 'in-progress' | 'completed' | 'cancelled';
+          due_date?: string | null;
+          created_at?: string;
+          updated_at?: string;
+          completed_at?: string | null;
+          estimated_minutes?: number | null;
+          actual_minutes?: number | null;
+          tags?: string[] | null;
+          ai_recommendation?: string | null;
+          ai_reason?: string | null;
+        };
+      };
+      sync_notes: {
+        Row: {
+          id: string;
+          local_id: string;
+          user_id: string;
+          title: string;
+          content: string | null;
+          category: 'personal' | 'work' | 'ideas' | 'todo' | 'learning' | 'other';
+          tags: string[] | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          local_id: string;
+          user_id: string;
+          title: string;
+          content?: string | null;
+          category: 'personal' | 'work' | 'ideas' | 'todo' | 'learning' | 'other';
+          tags?: string[] | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          local_id?: string;
+          user_id?: string;
+          title?: string;
+          content?: string | null;
+          category?: 'personal' | 'work' | 'ideas' | 'todo' | 'learning' | 'other';
+          tags?: string[] | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      sync_goals: {
+        Row: {
+          id: string;
+          local_id: string;
+          user_id: string;
+          title: string;
+          description: string | null;
+          category: 'personal' | 'work' | 'ideas' | 'todo' | 'learning' | 'other';
+          target_date: string | null;
+          progress: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          local_id: string;
+          user_id: string;
+          title: string;
+          description?: string | null;
+          category: 'personal' | 'work' | 'ideas' | 'todo' | 'learning' | 'other';
+          target_date?: string | null;
+          progress: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          local_id?: string;
+          user_id?: string;
+          title?: string;
+          description?: string | null;
+          category?: 'personal' | 'work' | 'ideas' | 'todo' | 'learning' | 'other';
+          target_date?: string | null;
+          progress?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      sync_queue: {
+        Row: {
+          id: string;
+          user_id: string;
+          entity_type: 'task' | 'note' | 'goal';
+          entity_id: string;
+          action: 'create' | 'update' | 'delete';
+          data: Json | null;
+          created_at: string;
+          processed_at: string | null;
+          error: string | null;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          entity_type: 'task' | 'note' | 'goal';
+          entity_id: string;
+          action: 'create' | 'update' | 'delete';
+          data?: Json | null;
+          created_at?: string;
+          processed_at?: string | null;
+          error?: string | null;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          entity_type?: 'task' | 'note' | 'goal';
+          entity_id?: string;
+          action?: 'create' | 'update' | 'delete';
+          data?: Json | null;
+          created_at?: string;
+          processed_at?: string | null;
+          error?: string | null;
+        };
+      };
+      sync_conflicts: {
+        Row: {
+          id: string;
+          user_id: string;
+          entity_type: 'task' | 'note' | 'goal';
+          entity_id: string;
+          local_data: Json;
+          remote_data: Json;
+          created_at: string;
+          resolved_at: string | null;
+          resolution: 'local' | 'remote' | 'merge' | null;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          entity_type: 'task' | 'note' | 'goal';
+          entity_id: string;
+          local_data: Json;
+          remote_data: Json;
+          created_at?: string;
+          resolved_at?: string | null;
+          resolution?: 'local' | 'remote' | 'merge' | null;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          entity_type?: 'task' | 'note' | 'goal';
+          entity_id?: string;
+          local_data?: Json;
+          remote_data?: Json;
+          created_at?: string;
+          resolved_at?: string | null;
+          resolution?: 'local' | 'remote' | 'merge' | null;
+        };
+      };
     }
     Views: {
       [_ in never]: never

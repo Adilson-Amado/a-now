@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { supabase } from '@/integrations/supabase/client';
 import { AIInsight, DailyStats, FocusSession, Task, TaskStatus, TimelineEntry } from '@/types/task';
 
 interface TaskState {
@@ -10,6 +11,8 @@ interface TaskState {
   focusSessions: FocusSession[];
   activeFlowTaskId?: string;
 
+  setTasks: (tasks: Task[]) => void;
+  clearTasks: () => void;
   addTask: (task: Omit<Task, 'id' | 'createdAt'>) => void;
   upsertTaskFromSync: (task: Task) => void;
   updateTask: (id: string, updates: Partial<Task>) => void;
@@ -36,63 +39,97 @@ interface TaskState {
 
 const generateId = () => Math.random().toString(36).slice(2, 11);
 
-const createDemoTasks = (): Task[] => {
-  const now = new Date();
-  return [
-    {
-      id: generateId(),
-      title: 'Revisar proposta do cliente',
-      description: 'Analisar e responder proposta comercial',
-      priority: 'urgent',
-      status: 'pending',
-      lifecycle: 'active',
-      aiRecommendation: 'do-now',
-      aiReason: 'Prazo curto e alto impacto no negocio',
-      createdAt: new Date(now.getTime() - 3600000),
-      updatedAt: new Date(now.getTime() - 3600000),
-      estimatedMinutes: 45,
-      category: 'Comercial',
-      effortLevel: 'heavy',
-      taskType: 'deep-focus',
-    },
-    {
-      id: generateId(),
-      title: 'Preparar apresentacao semanal',
-      description: 'Slides para reuniao da equipe',
-      priority: 'important',
-      status: 'in-progress',
-      lifecycle: 'active',
-      aiRecommendation: 'do-now',
-      aiReason: 'Reuniao marcada para amanha',
-      createdAt: new Date(now.getTime() - 7200000),
-      updatedAt: new Date(now.getTime() - 7200000),
-      estimatedMinutes: 60,
-      category: 'Projeto Alpha',
-      effortLevel: 'medium',
-      taskType: 'creative',
-    },
-  ];
+const persistTaskCreate = async (task: Task) => {
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return;
+
+    await supabase.from('sync_tasks').insert({
+      local_id: task.id,
+      user_id: user.id,
+      title: task.title,
+      description: task.description,
+      priority: task.priority,
+      status: task.status,
+      due_date: task.dueDate?.toISOString(),
+      created_at: task.createdAt.toISOString(),
+      updated_at: (task.updatedAt || task.createdAt).toISOString(),
+      completed_at: task.completedAt?.toISOString(),
+      estimated_minutes: task.estimatedMinutes,
+      actual_minutes: task.actualMinutes,
+      tags: task.tags,
+      ai_recommendation: task.aiRecommendation,
+      ai_reason: task.aiReason,
+    } as any);
+  } catch (error) {
+    console.error('Error persisting task create:', error);
+  }
 };
 
-const createDemoInsights = (): AIInsight[] => [
-  {
-    id: generateId(),
-    type: 'tip',
-    message: 'Seu pico de execucao esta entre 9h e 11h. Priorize tarefas de foco profundo nesse horario.',
-    priority: 'medium',
-    createdAt: new Date(),
-  },
-];
+const persistTaskUpdate = async (taskId: string, updates: Partial<Task>) => {
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return;
+
+    await supabase
+      .from('sync_tasks')
+      .update({
+        title: updates.title,
+        description: updates.description,
+        priority: updates.priority,
+        status: updates.status,
+        due_date: updates.dueDate?.toISOString(),
+        updated_at: updates.updatedAt?.toISOString() || new Date().toISOString(),
+        completed_at: updates.completedAt?.toISOString(),
+        estimated_minutes: updates.estimatedMinutes,
+        actual_minutes: updates.actualMinutes,
+        tags: updates.tags,
+        ai_recommendation: updates.aiRecommendation,
+        ai_reason: updates.aiReason,
+      } as any)
+      .eq('user_id', user.id)
+      .eq('local_id', taskId);
+  } catch (error) {
+    console.error('Error persisting task update:', error);
+  }
+};
+
+const persistTaskDelete = async (taskId: string) => {
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return;
+
+    await supabase.from('sync_tasks').delete().eq('user_id', user.id).eq('local_id', taskId);
+  } catch (error) {
+    console.error('Error persisting task delete:', error);
+  }
+};
 
 export const useTaskStore = create<TaskState>()(
   persist(
     (set, get) => ({
-      tasks: createDemoTasks(),
-      insights: createDemoInsights(),
+      tasks: [],
+      insights: [],
       timeline: [],
       dailyStats: [],
       focusSessions: [],
       activeFlowTaskId: undefined,
+
+      setTasks: (tasks) => set({ tasks }),
+      clearTasks: () =>
+        set({
+          tasks: [],
+          timeline: [],
+          dailyStats: [],
+          focusSessions: [],
+          activeFlowTaskId: undefined,
+        }),
 
       addTask: (task) => {
         const now = new Date();
@@ -104,6 +141,7 @@ export const useTaskStore = create<TaskState>()(
           lifecycle: task.lifecycle || 'active',
         };
         set((state) => ({ tasks: [newTask, ...state.tasks] }));
+        void persistTaskCreate(newTask);
       },
 
       upsertTaskFromSync: (task) => {
@@ -119,11 +157,13 @@ export const useTaskStore = create<TaskState>()(
       },
 
       updateTask: (id, updates) => {
+        const updatedAt = new Date();
         set((state) => ({
           tasks: state.tasks.map((task) =>
-            task.id === id ? { ...task, ...updates, updatedAt: new Date() } : task
+            task.id === id ? { ...task, ...updates, updatedAt } : task
           ),
         }));
+        void persistTaskUpdate(id, { ...updates, updatedAt });
       },
 
       deleteTask: (id) => {
@@ -132,46 +172,61 @@ export const useTaskStore = create<TaskState>()(
           focusSessions: state.focusSessions.filter((session) => session.taskId !== id),
           activeFlowTaskId: state.activeFlowTaskId === id ? undefined : state.activeFlowTaskId,
         }));
+        void persistTaskDelete(id);
       },
 
       completeTask: (id) => {
+        const completedAt = new Date();
+        const updatedAt = new Date();
         set((state) => ({
           tasks: state.tasks.map((task) =>
             task.id === id
               ? {
                   ...task,
                   status: 'completed' as TaskStatus,
-                  completedAt: new Date(),
+                  completedAt,
                   lifecycle: 'active',
-                  updatedAt: new Date(),
+                  updatedAt,
                 }
               : task
           ),
         }));
+        void persistTaskUpdate(id, {
+          status: 'completed',
+          completedAt,
+          lifecycle: 'active',
+          updatedAt,
+        });
       },
 
       archiveTask: (id) => {
+        const updatedAt = new Date();
         set((state) => ({
           tasks: state.tasks.map((task) =>
-            task.id === id ? { ...task, lifecycle: 'archived', updatedAt: new Date() } : task
+            task.id === id ? { ...task, lifecycle: 'archived', updatedAt } : task
           ),
         }));
+        void persistTaskUpdate(id, { lifecycle: 'archived', updatedAt });
       },
 
       pauseTask: (id) => {
+        const updatedAt = new Date();
         set((state) => ({
           tasks: state.tasks.map((task) =>
-            task.id === id ? { ...task, lifecycle: 'paused', updatedAt: new Date() } : task
+            task.id === id ? { ...task, lifecycle: 'paused', updatedAt } : task
           ),
         }));
+        void persistTaskUpdate(id, { lifecycle: 'paused', updatedAt });
       },
 
       reactivateTask: (id) => {
+        const updatedAt = new Date();
         set((state) => ({
           tasks: state.tasks.map((task) =>
-            task.id === id ? { ...task, lifecycle: 'active', updatedAt: new Date() } : task
+            task.id === id ? { ...task, lifecycle: 'active', updatedAt } : task
           ),
         }));
+        void persistTaskUpdate(id, { lifecycle: 'active', updatedAt });
       },
 
       setActiveFlowTask: (taskId) => set({ activeFlowTaskId: taskId }),

@@ -1,6 +1,6 @@
 {
-  "name": "a-now - Gestao de tarefas e produtividade",
-  "short_name": "a-now",
+  "name": "FocusFlow - Gestão de Tarefas e Produtividade",
+  "short_name": "FocusFlow",
   "description": "Aplicacao para gestao de tarefas, objetivos e produtividade",
   "start_url": "/",
   "display": "standalone",

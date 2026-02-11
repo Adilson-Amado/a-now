@@ -141,7 +141,7 @@ class SyncService {
       
       // Get remote tasks
       const { data: remoteTasks, error } = await supabase
-        .from('tasks')
+        .from('sync_tasks')
         .select('*')
         .eq('user_id', userId);
 
@@ -182,7 +182,7 @@ class SyncService {
       
       if (!remoteTask) {
         // New task - upload
-        await supabase.from('tasks').insert({
+        await (supabase.from('sync_tasks') as any).insert({
           local_id: task.id,
           user_id: userId,
           title: task.title,
@@ -199,20 +199,18 @@ class SyncService {
         });
       } else if (new Date(task.updatedAt) > new Date(remoteTask.updated_at)) {
         // Local is newer - update
-        await supabase
-          .from('tasks')
-          .update({
-            title: task.title,
-            description: task.description,
-            priority: task.priority,
-            status: task.status,
-            due_date: task.dueDate?.toISOString(),
-            updated_at: task.updatedAt?.toISOString() || task.createdAt.toISOString(),
-            completed_at: task.completedAt?.toISOString(),
-            estimated_minutes: task.estimatedMinutes,
-            actual_minutes: task.actualMinutes,
-            tags: task.tags,
-          })
+        await (supabase.from('sync_tasks') as any).update({
+          title: task.title,
+          description: task.description,
+          priority: task.priority,
+          status: task.status,
+          due_date: task.dueDate?.toISOString(),
+          updated_at: task.updatedAt?.toISOString() || task.createdAt.toISOString(),
+          completed_at: task.completedAt?.toISOString(),
+          estimated_minutes: task.estimatedMinutes,
+          actual_minutes: task.actualMinutes,
+          tags: task.tags,
+        })
           .eq('local_id', task.id)
           .eq('user_id', userId);
       }
@@ -273,7 +271,7 @@ class SyncService {
       const localNotes = JSON.parse(localStorage.getItem('focusflow-notes') || '[]');
       
       const { data: remoteNotes, error } = await supabase
-        .from('notes')
+        .from('sync_notes')
         .select('*')
         .eq('user_id', userId);
 
@@ -296,7 +294,7 @@ class SyncService {
       const remoteNote = remoteMap.get(note.id);
       
       if (!remoteNote) {
-        await supabase.from('notes').insert({
+        await (supabase.from('sync_notes') as any).insert({
           local_id: note.id,
           user_id: userId,
           title: note.title,
@@ -307,9 +305,7 @@ class SyncService {
           updated_at: note.updatedAt?.toISOString() || note.createdAt.toISOString(),
         });
       } else if (new Date(note.updatedAt) > new Date(remoteNote.updated_at)) {
-        await supabase
-          .from('notes')
-          .update({
+        await (supabase.from('sync_notes') as any).update({
             title: note.title,
             content: note.content,
             category: note.category,
@@ -363,7 +359,7 @@ class SyncService {
       const localGoals = JSON.parse(localStorage.getItem('focusflow-goals') || '[]');
       
       const { data: remoteGoals, error } = await supabase
-        .from('goals')
+        .from('sync_goals')
         .select('*')
         .eq('user_id', userId);
 
@@ -385,7 +381,7 @@ class SyncService {
       const remoteGoal = remoteMap.get(goal.id);
       
       if (!remoteGoal) {
-        await supabase.from('goals').insert({
+        await (supabase.from('sync_goals') as any).insert({
           local_id: goal.id,
           user_id: userId,
           title: goal.title,
@@ -397,9 +393,7 @@ class SyncService {
           updated_at: goal.updatedAt?.toISOString() || goal.createdAt.toISOString(),
         });
       } else if (new Date(goal.updatedAt) > new Date(remoteGoal.updated_at)) {
-        await supabase
-          .from('goals')
-          .update({
+        await (supabase.from('sync_goals') as any).update({
             title: goal.title,
             description: goal.description,
             category: goal.category,

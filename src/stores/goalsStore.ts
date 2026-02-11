@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface Goal {
   id: string;
@@ -42,6 +43,8 @@ export interface Goal {
 
 interface GoalsState {
   goals: Goal[];
+  setGoals: (goals: Goal[]) => void;
+  clearGoals: () => void;
   addGoal: (goal: Omit<Goal, 'id' | 'createdAt' | 'updatedAt' | 'progress' | 'completed' | 'completedAt' | 'completedSessions'>) => void;
   updateGoal: (id: string, updates: Partial<Omit<Goal, 'id' | 'createdAt' | 'updatedAt'>>) => void;
   deleteGoal: (id: string) => void;
@@ -57,10 +60,78 @@ interface GoalsState {
 
 const generateId = () => Math.random().toString(36).substr(2, 9);
 
+const normalizeGoalCategory = (category?: string) => {
+  const allowed = new Set(['personal', 'work', 'ideas', 'todo', 'learning', 'other']);
+  if (category && allowed.has(category)) return category;
+  return 'personal';
+};
+
+const persistGoalCreate = async (goal: Goal) => {
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return;
+
+    await supabase.from('sync_goals').insert({
+      local_id: goal.id,
+      user_id: user.id,
+      title: goal.title,
+      description: goal.description,
+      category: normalizeGoalCategory(goal.category),
+      target_date: goal.targetDate?.toISOString(),
+      progress: goal.progress,
+      created_at: goal.createdAt.toISOString(),
+      updated_at: goal.updatedAt.toISOString(),
+    } as any);
+  } catch (error) {
+    console.error('Error persisting goal create:', error);
+  }
+};
+
+const persistGoalUpdate = async (goalId: string, updates: Partial<Goal>) => {
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return;
+
+    await supabase
+      .from('sync_goals')
+      .update({
+        title: updates.title,
+        description: updates.description,
+        category: updates.category ? normalizeGoalCategory(updates.category) : undefined,
+        target_date: updates.targetDate?.toISOString(),
+        progress: updates.progress,
+        updated_at: updates.updatedAt?.toISOString() || new Date().toISOString(),
+      } as any)
+      .eq('user_id', user.id)
+      .eq('local_id', goalId);
+  } catch (error) {
+    console.error('Error persisting goal update:', error);
+  }
+};
+
+const persistGoalDelete = async (goalId: string) => {
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return;
+
+    await supabase.from('sync_goals').delete().eq('user_id', user.id).eq('local_id', goalId);
+  } catch (error) {
+    console.error('Error persisting goal delete:', error);
+  }
+};
+
 export const useGoalsStore = create<GoalsState>()(
   persist(
     (set, get) => ({
       goals: [],
+      setGoals: (goals) => set({ goals }),
+      clearGoals: () => set({ goals: [] }),
       
       // Migration function to handle old data
       _migrateGoals: () => {
@@ -90,47 +161,58 @@ export const useGoalsStore = create<GoalsState>()(
           lifecycle: 'active',
         };
         set((state) => ({ goals: [newGoal, ...state.goals] }));
+        void persistGoalCreate(newGoal);
       },
       
       updateGoal: (id, updates) => {
+        const updatedAt = new Date();
         set((state) => ({
           goals: state.goals.map((goal) =>
-            goal.id === id ? { ...goal, ...updates } : goal
+            goal.id === id ? { ...goal, ...updates, updatedAt } : goal
           ),
         }));
+        void persistGoalUpdate(id, { ...updates, updatedAt } as Goal);
       },
       
       deleteGoal: (id) => {
         set((state) => ({
           goals: state.goals.filter((goal) => goal.id !== id),
         }));
+        void persistGoalDelete(id);
       },
 
       archiveGoal: (id) => {
+        const updatedAt = new Date();
         set((state) => ({
           goals: state.goals.map((goal) =>
-            goal.id === id ? { ...goal, lifecycle: 'archived', updatedAt: new Date() } : goal
+            goal.id === id ? { ...goal, lifecycle: 'archived', updatedAt } : goal
           ),
         }));
+        void persistGoalUpdate(id, { lifecycle: 'archived', updatedAt } as Goal);
       },
 
       pauseGoal: (id) => {
+        const updatedAt = new Date();
         set((state) => ({
           goals: state.goals.map((goal) =>
-            goal.id === id ? { ...goal, lifecycle: 'paused', updatedAt: new Date() } : goal
+            goal.id === id ? { ...goal, lifecycle: 'paused', updatedAt } : goal
           ),
         }));
+        void persistGoalUpdate(id, { lifecycle: 'paused', updatedAt } as Goal);
       },
 
       reactivateGoal: (id) => {
+        const updatedAt = new Date();
         set((state) => ({
           goals: state.goals.map((goal) =>
-            goal.id === id ? { ...goal, lifecycle: 'active', updatedAt: new Date() } : goal
+            goal.id === id ? { ...goal, lifecycle: 'active', updatedAt } : goal
           ),
         }));
+        void persistGoalUpdate(id, { lifecycle: 'active', updatedAt } as Goal);
       },
       
       updateProgress: (id, progress) => {
+        const updatedAt = new Date();
         set((state) => ({
           goals: state.goals.map((goal) =>
             goal.id === id ? { 
@@ -138,13 +220,20 @@ export const useGoalsStore = create<GoalsState>()(
               progress, 
               completed: progress >= 100,
               completedAt: progress >= 100 ? new Date() : undefined,
-              updatedAt: new Date()
+              updatedAt
             } : goal
           ),
         }));
+        void persistGoalUpdate(id, {
+          progress,
+          completed: progress >= 100,
+          completedAt: progress >= 100 ? new Date() : undefined,
+          updatedAt,
+        } as Goal);
       },
       
       completeSession: (id) => {
+        const updatedAt = new Date();
         set((state) => ({
           goals: state.goals.map((goal) => {
             if (goal.id === id && goal.totalSessions) {
@@ -156,15 +245,17 @@ export const useGoalsStore = create<GoalsState>()(
                 progress,
                 completed: progress >= 100,
                 completedAt: progress >= 100 ? new Date() : undefined,
-                updatedAt: new Date()
+                updatedAt
               };
             }
             return goal;
           }),
         }));
+        void persistGoalUpdate(id, { updatedAt } as Goal);
       },
       
       updateMilestone: (id, milestoneId, completed) => {
+        const updatedAt = new Date();
         set((state) => ({
           goals: state.goals.map((goal) => {
             if (goal.id === id) {
@@ -181,15 +272,17 @@ export const useGoalsStore = create<GoalsState>()(
                 progress,
                 completed: progress >= 100,
                 completedAt: progress >= 100 ? new Date() : undefined,
-                updatedAt: new Date()
+                updatedAt
               };
             }
             return goal;
           }),
         }));
+        void persistGoalUpdate(id, { updatedAt } as Goal);
       },
       
       updateFinancialProgress: (id, currentAmount) => {
+        const updatedAt = new Date();
         set((state) => ({
           goals: state.goals.map((goal) => {
             if (goal.id === id && goal.targetAmount) {
@@ -200,12 +293,13 @@ export const useGoalsStore = create<GoalsState>()(
                 progress,
                 completed: progress >= 100,
                 completedAt: progress >= 100 ? new Date() : undefined,
-                updatedAt: new Date()
+                updatedAt
               };
             }
             return goal;
           }),
         }));
+        void persistGoalUpdate(id, { updatedAt } as Goal);
       },
     }),
     {
