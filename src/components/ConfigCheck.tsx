@@ -48,7 +48,7 @@ export function ConfigCheck() {
           <div className="flex-1">
             <h3 className="font-semibold text-yellow-800">Configuração Necessária</h3>
             <p className="text-sm text-yellow-700 mt-1">
-              Configure as variáveis de ambiente no Netlify:
+              Configure as variáveis de ambiente no Vercel:
             </p>
             <div className="mt-3 space-y-2">
               <div className="flex items-center gap-2 text-sm">
@@ -84,8 +84,8 @@ export function ConfigCheck() {
             </div>
             <div className="mt-3 p-2 bg-yellow-100 rounded text-xs text-yellow-800">
               <strong>Como configurar:</strong><br />
-              1. Vá ao dashboard Netlify<br />
-              2. Site settings → Build & deploy → Environment<br />
+              1. Vá ao dashboard Vercel<br />
+              2. Settings → Environment Variables<br />
               3. Adicione as variáveis acima
             </div>
           </div>
