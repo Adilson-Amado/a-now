@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { supabase } from '@/integrations/supabase/client';
+import { v4 as uuidv4 } from 'uuid';
 
 export interface Goal {
   id: string;
@@ -58,7 +59,7 @@ interface GoalsState {
   _migrateGoals: () => void;
 }
 
-const generateId = () => Math.random().toString(36).substr(2, 9);
+const generateId = () => uuidv4();
 
 const normalizeGoalCategory = (category?: string) => {
   const allowed = new Set(['personal', 'work', 'ideas', 'todo', 'learning', 'other']);

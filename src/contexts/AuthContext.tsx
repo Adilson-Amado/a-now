@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { isSupabaseConfigured, supabase } from '@/integrations/supabase/client';
 
@@ -122,6 +122,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
+  const authInitialized = useRef(false);
 
   useEffect(() => {
     if (!isSupabaseConfigured) {
@@ -129,13 +130,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
       return;
     }
 
-    const getSession = async () => {
+    let cancelled = false;
+
+    const initializeAuth = async () => {
       try {
         const {
           data: { session },
         } = await supabase.auth.getSession();
 
-        if (session?.user) {
+        if (!cancelled && session?.user) {
           setUser(toAppUser(session.user));
         }
       } catch (error) {
@@ -143,32 +146,38 @@ export function AuthProvider({ children }: AuthProviderProps) {
         clearSupabaseAuthStorage();
         await supabase.auth.signOut({ scope: 'local' }).catch(() => undefined);
       } finally {
-        setIsLoading(false);
+        if (!cancelled) {
+          setIsLoading(false);
+          authInitialized.current = true;
+        }
       }
     };
 
-    getSession();
+    initializeAuth();
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.user) {
-        setUser(toAppUser(session.user));
-      } else {
-        setUser(null);
+      // Só processar se já inicializamos ou é um evento real
+      if (authInitialized.current || session?.user) {
+        if (!cancelled) {
+          setUser(session?.user ? toAppUser(session.user) : null);
+          setIsLoading(false);
+        }
       }
-
-      setIsLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      cancelled = true;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
     if (!isSupabaseConfigured) {
       return {
         success: false,
-        error: 'Configuracao de autenticacao em falta. Define VITE_SUPABASE_URL e VITE_SUPABASE_PUBLISHABLE_KEY.',
+        error: 'Configuração em falta. No Vercel: Settings → Environment Variables e defina VITE_SUPABASE_URL e VITE_SUPABASE_PUBLISHABLE_KEY.',
       };
     }
 
@@ -217,7 +226,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     if (!isSupabaseConfigured) {
       return {
         success: false,
-        error: 'Configuracao de autenticacao em falta. Define VITE_SUPABASE_URL e VITE_SUPABASE_PUBLISHABLE_KEY.',
+        error: 'Configuração em falta. No Vercel: Settings → Environment Variables e defina VITE_SUPABASE_URL e VITE_SUPABASE_PUBLISHABLE_KEY.',
       };
     }
 
@@ -276,7 +285,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     if (!isSupabaseConfigured) {
       return {
         success: false,
-        error: 'Configuracao de autenticacao em falta. Define VITE_SUPABASE_URL e VITE_SUPABASE_PUBLISHABLE_KEY.',
+        error: 'Configuração em falta. No Vercel: Settings → Environment Variables e defina VITE_SUPABASE_URL e VITE_SUPABASE_PUBLISHABLE_KEY.',
       };
     }
 

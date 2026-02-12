@@ -170,6 +170,50 @@ class NotificationsService {
       action_label: 'Ver Conquistas'
     });
   }
+
+  async notifyTaskDueSoon(userId: string, taskTitle: string, message: string): Promise<void> {
+    await this.createNotification({
+      user_id: userId,
+      title: `⏰ Tarefa a Vencer: ${taskTitle}`,
+      message: message,
+      type: 'warning',
+      action_url: '/tasks',
+      action_label: 'Ver Tarefa'
+    });
+  }
+
+  async notifyTaskDue30Min(userId: string, taskTitle: string, message: string): Promise<void> {
+    await this.createNotification({
+      user_id: userId,
+      title: `🚨 URGENTE: ${taskTitle}`,
+      message: message,
+      type: 'error',
+      action_url: '/tasks',
+      action_label: 'Ver Tarefa'
+    });
+  }
+
+  async notifyGoalDelayed(userId: string, goalTitle: string, message: string): Promise<void> {
+    await this.createNotification({
+      user_id: userId,
+      title: `📅 Meta Atrasada: ${goalTitle}`,
+      message: message,
+      type: 'warning',
+      action_url: '/goals',
+      action_label: 'Ver Meta'
+    });
+  }
+
+  async notifyNoTasksCreated(userId: string, message: string): Promise<void> {
+    await this.createNotification({
+      user_id: userId,
+      title: `📝 Tempo sem Atividade`,
+      message: message,
+      type: 'info',
+      action_url: '/tasks',
+      action_label: 'Criar Tarefa'
+    });
+  }
 }
 
 export const notificationsService = new NotificationsService();

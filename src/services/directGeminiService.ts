@@ -39,7 +39,11 @@ class DirectGeminiService {
   constructor() {
     this.apiKey = import.meta.env.VITE_GEMINI_API_KEY;
     if (!this.apiKey) {
-      console.warn('Gemini API key not found. AI features will be disabled.');
+      console.error('❌ Gemini API key not found in environment variables');
+      console.error('📋 Available env vars:', Object.keys(import.meta.env).filter(k => k.includes('GEMINI')));
+      console.warn('⚠️ AI features will be disabled. Please check your .env file.');
+    } else {
+      console.log('✅ Gemini API key loaded successfully');
     }
   }
 
@@ -116,6 +120,13 @@ class DirectGeminiService {
 
   // Generate task details
   async generateTaskDetails(title: string, description?: string, priority?: string, context?: any) {
+    console.log('🚀 Starting AI task generation for:', title);
+    
+    if (!this.apiKey) {
+      console.error('❌ Cannot generate task details: No API key configured');
+      throw new Error('Gemini API key not configured. Please check your .env file.');
+    }
+
     const prompt = `Como um assistente de produtividade especializado, analise esta tarefa e forneça detalhes úteis:
 
 Título: ${title}
@@ -141,12 +152,16 @@ Forneça uma resposta em formato JSON com esta estrutura exata:
 Seja prático, específico e considere o contexto fornecido.`;
 
     try {
+      console.log('📤 Sending request to Gemini API...');
       const response = await this.callGemini(prompt, { maxTokens: 800, temperature: 0.7 });
+      console.log('📥 Received response from Gemini API');
       
       // Parse JSON from response
       const jsonMatch = response.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
+        console.log('🔍 Parsing JSON from response...');
         const parsed = JSON.parse(jsonMatch[0]);
+        console.log('✅ Successfully parsed AI response');
         return {
           description: parsed.description || response,
           estimatedMinutes: Math.min(Math.max(parsed.estimatedMinutes || 30, 5), 240),
@@ -157,6 +172,7 @@ Seja prático, específico e considere o contexto fornecido.`;
         };
       }
 
+      console.warn('⚠️ JSON parsing failed, using fallback response');
       // Fallback if JSON parsing fails
       return {
         description: response,
@@ -168,7 +184,13 @@ Seja prático, específico e considere o contexto fornecido.`;
       };
 
     } catch (error) {
-      console.error('Error generating task details:', error);
+      console.error('❌ Error generating task details:', error);
+      console.error('📊 Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+        title,
+        hasApiKey: !!this.apiKey
+      });
       throw new Error('Falha ao gerar detalhes da tarefa');
     }
   }

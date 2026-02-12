@@ -195,18 +195,29 @@ export function useSync() {
       // Download new/updated remote notes
       for (const remoteNote of remoteNotes || []) {
         const localNote = localMap.get(remoteNote.local_id);
-        
-        if (!localNote) {
-          const newNote = {
+
+        const remoteUpdatedAt = remoteNote.updated_at
+          ? new Date(remoteNote.updated_at).getTime()
+          : new Date(remoteNote.created_at).getTime();
+        const localUpdatedAt = localNote
+          ? new Date(localNote.updatedAt || localNote.createdAt).getTime()
+          : 0;
+
+        if (!localNote || remoteUpdatedAt > localUpdatedAt) {
+          notesStore.upsertNoteFromSync({
             id: remoteNote.local_id,
             title: remoteNote.title,
-            content: remoteNote.content,
+            content: remoteNote.content || undefined,
             category: remoteNote.category,
-            tags: remoteNote.tags,
-            createdAt: new Date(remoteNote.created_at),
-            updatedAt: remoteNote.updated_at ? new Date(remoteNote.updated_at) : new Date(remoteNote.created_at),
-          };
-          notesStore.addNote(newNote);
+            tags: remoteNote.tags || undefined,
+            createdAt: remoteNote.created_at ? new Date(remoteNote.created_at) : new Date(),
+            updatedAt: remoteNote.updated_at
+              ? new Date(remoteNote.updated_at)
+              : remoteNote.created_at
+              ? new Date(remoteNote.created_at)
+              : new Date(),
+            saveStatus: 'saved',
+          });
         }
       }
 

@@ -46,7 +46,7 @@ export default function Dashboard() {
   useSync();
 
   const [view, setView] = useState<View>('dashboard');
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mobileQuickActionsOpen, setMobileQuickActionsOpen] = useState(false);
 
   const pending = getPendingTasks();
   const completedToday = getCompletedToday();
@@ -62,12 +62,16 @@ export default function Dashboard() {
     { id: 'settings', label: 'Configuracoes', icon: Settings },
   ];
 
-  const primaryMobileItems = navItems.slice(0, 4);
-  const extraMobileItems = navItems.slice(4);
+  const primaryMobileItems = navItems.filter((item) =>
+    ['dashboard', 'tasks', 'focus', 'notes'].includes(item.id)
+  );
+  const extraMobileItems = navItems.filter((item) =>
+    ['goals', 'reports', 'profile', 'settings'].includes(item.id)
+  );
 
   const changeView = (next: View) => {
     setView(next);
-    setMobileMenuOpen(false);
+    setMobileQuickActionsOpen(false);
   };
 
   return (
@@ -110,7 +114,7 @@ export default function Dashboard() {
             <h1 className="truncate text-sm font-medium lg:hidden">
               {navItems.find((item) => item.id === view)?.label || 'a-now'}
             </h1>
-            <div className="shrink-0">
+            <div className="hidden shrink-0 lg:block">
               <AddTaskButton />
             </div>
           </div>
@@ -190,73 +194,116 @@ export default function Dashboard() {
         </div>
       </main>
 
-      {mobileMenuOpen && (
+      {mobileQuickActionsOpen && (
         <button
           className="fixed inset-0 z-30 bg-black/25 lg:hidden"
-          onClick={() => setMobileMenuOpen(false)}
-          aria-label="Fechar menu expandido"
+          onClick={() => setMobileQuickActionsOpen(false)}
+          aria-label="Fechar painel de acoes rapidas"
         />
       )}
 
-      <nav className="fixed inset-x-0 bottom-0 z-40 border-t bg-background/95 backdrop-blur lg:hidden">
-        {mobileMenuOpen && (
-          <div className="absolute bottom-16 left-3 right-3 rounded-xl border bg-card p-2 shadow-xl">
-            <div className="grid grid-cols-2 gap-1">
-              {extraMobileItems.map((item) => {
-                const Icon = item.icon;
-                const active = view === item.id;
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => changeView(item.id)}
-                    className={cn(
-                      'flex items-center gap-2 rounded-md px-3 py-2 text-sm',
-                      active ? 'bg-primary text-primary-foreground' : 'hover:bg-accent'
-                    )}
-                  >
-                    <Icon className="h-4 w-4" />
-                    {item.label}
-                  </button>
-                );
-              })}
+      <nav className="fixed inset-x-0 bottom-0 z-40 lg:hidden">
+        <AnimatePresence>
+          {mobileQuickActionsOpen && (
+            <motion.div
+              initial={{ opacity: 0, y: 20, scale: 0.97 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 20, scale: 0.97 }}
+              className="absolute bottom-20 left-3 right-3 rounded-2xl border bg-card/98 p-3 shadow-2xl backdrop-blur"
+            >
+              <div className="mb-3 flex items-center justify-between">
+                <p className="text-sm font-semibold">Acoes rapidas</p>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-8 w-8"
+                  onClick={() => setMobileQuickActionsOpen(false)}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+
+              <div className="mb-3">
+                <AddTaskButton />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => changeView('notes')}
+                  className="flex items-center gap-2 rounded-xl border px-3 py-2 text-sm hover:bg-accent"
+                >
+                  <FileText className="h-4 w-4" />
+                  Nova nota
+                </button>
+                <button
+                  onClick={() => changeView('goals')}
+                  className="flex items-center gap-2 rounded-xl border px-3 py-2 text-sm hover:bg-accent"
+                >
+                  <Target className="h-4 w-4" />
+                  Nova meta
+                </button>
+                {extraMobileItems.map((item) => {
+                  const Icon = item.icon;
+                  const active = view === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => changeView(item.id)}
+                      className={cn(
+                        'flex items-center gap-2 rounded-xl border px-3 py-2 text-sm',
+                        active ? 'border-primary bg-primary/10 text-primary' : 'hover:bg-accent'
+                      )}
+                    >
+                      <Icon className="h-4 w-4" />
+                      {item.label}
+                    </button>
+                  );
+                })}
+              </div>
+
               <button
                 onClick={logout}
-                className="col-span-2 flex items-center gap-2 rounded-md px-3 py-2 text-sm text-destructive hover:bg-destructive/10"
+                className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm text-destructive hover:bg-destructive/10"
               >
                 <LogOut className="h-4 w-4" />
                 Sair
               </button>
-            </div>
-          </div>
-        )}
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-        <div className="grid grid-cols-5 gap-1 px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2">
-          {primaryMobileItems.map((item) => {
-            const Icon = item.icon;
-            const active = view === item.id;
-            return (
-              <button
-                key={item.id}
-                onClick={() => changeView(item.id)}
-                className={cn(
-                  'flex flex-col items-center justify-center gap-1 rounded-md px-1 py-2 text-[11px]',
-                  active ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-accent'
-                )}
-              >
-                <Icon className="h-4 w-4" />
-                <span className="leading-none">{item.label}</span>
-              </button>
-            );
-          })}
+        <div className="relative mx-2 mb-[max(0.5rem,env(safe-area-inset-bottom))] rounded-2xl border bg-background/95 px-2 pb-2 pt-3 shadow-lg backdrop-blur">
+          <div className="grid grid-cols-4 gap-1">
+            {primaryMobileItems.map((item) => {
+              const Icon = item.icon;
+              const active = view === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => changeView(item.id)}
+                  className={cn(
+                    'flex flex-col items-center justify-center gap-1 rounded-lg px-1 py-2 text-[11px]',
+                    active ? 'bg-primary/15 text-primary' : 'text-muted-foreground hover:bg-accent'
+                  )}
+                >
+                  <Icon className="h-4 w-4" />
+                  <span className="leading-none">{item.label}</span>
+                </button>
+              );
+            })}
+          </div>
+
           <button
-            onClick={() => setMobileMenuOpen((value) => !value)}
+            onClick={() => setMobileQuickActionsOpen((value) => !value)}
             className={cn(
-              'flex flex-col items-center justify-center gap-1 rounded-md px-1 py-2 text-[11px]',
-              mobileMenuOpen ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-accent'
+              'absolute -top-6 left-1/2 z-10 flex h-12 w-12 -translate-x-1/2 items-center justify-center rounded-full border-4 border-background shadow-lg transition-transform',
+              mobileQuickActionsOpen
+                ? 'scale-105 bg-primary text-primary-foreground'
+                : 'bg-gradient-to-br from-primary to-primary/80 text-primary-foreground'
             )}
+            aria-label="Abrir acoes rapidas"
           >
-            {mobileMenuOpen ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-            <span className="leading-none">Mais</span>
+            {mobileQuickActionsOpen ? <X className="h-5 w-5" /> : <Plus className="h-5 w-5" />}
           </button>
         </div>
       </nav>

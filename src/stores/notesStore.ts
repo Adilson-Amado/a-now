@@ -23,6 +23,7 @@ interface NotesState {
   setNotes: (notes: Note[]) => void;
   clearNotes: () => void;
   addNote: (note: Omit<Note, 'id' | 'createdAt' | 'updatedAt'>) => void;
+  upsertNoteFromSync: (note: Note) => void;
   updateNote: (id: string, updates: Partial<Omit<Note, 'id' | 'createdAt'>>) => void;
   deleteNote: (id: string) => void;
   _migrateNotes: () => void;
@@ -119,6 +120,19 @@ export const useNotesStore = create<NotesState>()(
         };
         set((state) => ({ notes: [newNote, ...state.notes] }));
         void persistNoteCreate(newNote);
+      },
+
+      upsertNoteFromSync: (note) => {
+        set((state) => {
+          const existingIndex = state.notes.findIndex((item) => item.id === note.id);
+          if (existingIndex === -1) {
+            return { notes: [note, ...state.notes] };
+          }
+
+          const nextNotes = [...state.notes];
+          nextNotes[existingIndex] = note;
+          return { notes: nextNotes };
+        });
       },
       
       updateNote: (id, updates) => {

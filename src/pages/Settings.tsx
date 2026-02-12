@@ -32,6 +32,7 @@ import { useGoalsStore } from '@/stores/goalsStore';
 import { NotificationSettings } from '@/components/Notifications/NotificationSettings';
 import { SyncStatus } from '@/components/Sync/SyncStatus';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function Settings() {
   const { t } = useTranslation();
@@ -70,9 +71,33 @@ export default function Settings() {
     toast.success('Dados exportados com sucesso!');
   };
 
-  const handleClearData = () => {
-    localStorage.clear();
-    window.location.reload();
+  const handleClearData = async () => {
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (user?.id) {
+        const results = await Promise.all([
+          supabase.from('sync_tasks').delete().eq('user_id', user.id),
+          supabase.from('sync_notes').delete().eq('user_id', user.id),
+          supabase.from('sync_goals').delete().eq('user_id', user.id),
+        ]);
+
+        const error = results.find((res) => res.error)?.error;
+        if (error) throw error;
+      }
+
+      taskStore.clearTasks();
+      notesStore.clearNotes();
+      goalsStore.clearGoals();
+      localStorage.clear();
+      toast.success('Dados apagados com sucesso');
+      window.location.reload();
+    } catch (error) {
+      console.error('Error clearing data:', error);
+      toast.error('Erro ao apagar dados. Tente novamente.');
+    }
   };
 
   return (

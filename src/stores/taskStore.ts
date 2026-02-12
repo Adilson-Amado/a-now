@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { supabase } from '@/integrations/supabase/client';
 import { AIInsight, DailyStats, FocusSession, Task, TaskStatus, TimelineEntry } from '@/types/task';
+import { v4 as uuidv4 } from 'uuid';
 
 interface TaskState {
   tasks: Task[];
@@ -37,7 +38,7 @@ interface TaskState {
   getProductivityState: () => 'productive' | 'partial' | 'unproductive';
 }
 
-const generateId = () => Math.random().toString(36).slice(2, 11);
+const generateId = () => uuidv4();
 
 const persistTaskCreate = async (task: Task) => {
   try {

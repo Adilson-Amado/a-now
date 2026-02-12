@@ -6,10 +6,17 @@ import { ConfigCheck } from '@/components/ConfigCheck';
 import { DesktopNotificationContainer } from '@/components/Notifications/DesktopNotificationContainer';
 import { PWAInstallBanner } from '@/components/Notifications/PWAInstallBanner';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { useTaskMonitoring } from '@/hooks/useTaskMonitoring';
 
 import Login from '@/pages/Login';
 import Dashboard from '@/pages/Dashboard';
 import NotFound from '@/pages/NotFound';
+
+// Componente para monitoramento de tarefas
+function TaskMonitor() {
+  useTaskMonitoring();
+  return null;
+}
 
 function App() {
   return (
@@ -19,6 +26,7 @@ function App() {
           <ConfigCheck />
           <DesktopNotificationContainer />
           <PWAInstallBanner />
+          <TaskMonitor />
           <Toaster position="top-right" expand={false} richColors closeButton />
 
           <Routes>
